@@ -1,232 +1,551 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PedalPal Bike Rentals</title>
-    <!-- jQuery 1.12.4: EOL since 2016. Still works. Still here. Like a flip phone in a drawer. -->
-    <script src="https://code.jquery.com/jquery-1.12.4.min.js"
-            integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ="
-            crossorigin="anonymous"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 40px 20px;
-        }
+    <!-- ── Primary SEO ─────────────────────────────────────────────────────── -->
+    <title>PedalPal — Premium Bike Rentals | Beach Cruisers & Mountain Bikes</title>
+    <meta name="description"
+          content="Rent premium Beach Cruisers and Mountain Bikes at PedalPal. 12 hand-picked bikes, instant booking, no paperwork. Add accessories and save 10% with our bundle deal.">
+    <meta name="keywords"
+          content="bike rental, beach cruiser rental, mountain bike rental, bicycle hire, bike accessories, PedalPal">
+    <meta name="author" content="PedalPal Bike Rentals">
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+    <meta name="theme-color" content="#020617">
+    <link rel="canonical" href="https://pedalpal.example.com/">
 
-        .header {
-            text-align: center;
-            color: white;
-            margin-bottom: 50px;
-        }
+    <!-- ── Open Graph (Facebook, LinkedIn, WhatsApp) ──────────────────────── -->
+    <meta property="og:type"        content="website">
+    <meta property="og:site_name"   content="PedalPal Bike Rentals">
+    <meta property="og:locale"      content="en_US">
+    <meta property="og:url"         content="https://pedalpal.example.com/">
+    <meta property="og:title"       content="PedalPal — Premium Bike Rentals">
+    <meta property="og:description"
+          content="Browse 12 hand-picked bikes across two categories. Rent instantly. Add accessories and save 10% with our bundle deal. No paperwork, no queues.">
+    <meta property="og:image"       content="https://pedalpal.example.com/og-image.png">
+    <meta property="og:image:width"  content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt"    content="PedalPal — Browse Beach Cruisers and Mountain Bikes">
 
-        .header h1 {
-            font-size: 3rem;
-            font-weight: 700;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-            margin-bottom: 10px;
-        }
+    <!-- ── Twitter Card ───────────────────────────────────────────────────── -->
+    <meta name="twitter:card"        content="summary_large_image">
+    <meta name="twitter:site"        content="@pedalpal">
+    <meta name="twitter:title"       content="PedalPal — Premium Bike Rentals">
+    <meta name="twitter:description"
+          content="12 hand-picked bikes. Instant booking. Bundle accessory deals. Start riding today.">
+    <meta name="twitter:image"       content="https://pedalpal.example.com/og-image.png">
+    <meta name="twitter:image:alt"   content="PedalPal bike rental homepage">
 
-        .header p {
-            font-size: 1.2rem;
-            opacity: 0.9;
-        }
+    <!-- ── Favicon ────────────────────────────────────────────────────────── -->
+    <!-- SVG emoji favicon — works in all modern browsers, no file needed -->
+    <link rel="icon" type="image/svg+xml"
+          href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='85'>🚲</text></svg>">
+    <link rel="apple-touch-icon"
+          href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='85'>🚲</text></svg>">
 
-        .bike-emoji {
-            font-size: 2rem;
-            cursor: pointer;
-            display: inline-block;
-            transition: transform 0.2s;
-            user-select: none;
-        }
+    <!-- ── Resource hints (load CDNs faster, don't block render) ──────────── -->
+    <link rel="preconnect"   href="https://fonts.googleapis.com">
+    <link rel="preconnect"   href="https://fonts.gstatic.com" crossorigin>
+    <link rel="dns-prefetch" href="https://cdn.tailwindcss.com">
 
-        .bike-emoji:hover {
-            transform: scale(1.2);
-        }
-
-        .bike-emoji:active {
-            transform: scale(0.9);
-        }
-
-        .cards-container {
-            display: flex;
-            gap: 30px;
-            flex-wrap: wrap;
-            justify-content: center;
-            max-width: 900px;
-            width: 100%;
-        }
-
-        .card {
-            background: white;
-            border-radius: 16px;
-            padding: 40px;
-            width: 380px;
-            text-align: center;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
-            transition: transform 0.3s, box-shadow 0.3s;
-            cursor: pointer;
-        }
-
-        .card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 30px 80px rgba(0,0,0,0.3);
-        }
-
-        .card-emoji {
-            font-size: 4rem;
-            margin-bottom: 20px;
-        }
-
-        .card h2 {
-            font-size: 1.8rem;
-            color: #333;
-            margin-bottom: 12px;
-        }
-
-        .card p {
-            color: #666;
-            font-size: 1rem;
-            line-height: 1.6;
-            margin-bottom: 25px;
-        }
-
-        .card-btn {
-            display: inline-block;
-            padding: 12px 32px;
-            border-radius: 50px;
-            font-size: 1rem;
-            font-weight: 600;
-            text-decoration: none;
-            cursor: pointer;
-            border: none;
-            transition: background 0.2s, transform 0.1s;
-        }
-
-        .card-btn:active {
-            transform: scale(0.97);
-        }
-
-        .beach-btn {
-            background: linear-gradient(135deg, #f093fb, #f5576c);
-            color: white;
-        }
-
-        .beach-btn:hover {
-            background: linear-gradient(135deg, #e070e8, #e03050);
-        }
-
-        .mountain-btn {
-            background: linear-gradient(135deg, #4facfe, #00f2fe);
-            color: white;
-        }
-
-        .mountain-btn:hover {
-            background: linear-gradient(135deg, #2d8fe0, #00c8d8);
-        }
-
-        .footer {
-            margin-top: 50px;
-            color: rgba(255,255,255,0.7);
-            font-size: 0.85rem;
-            text-align: center;
-        }
-
-        .reset-toast {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.85);
-            color: white;
-            padding: 14px 28px;
-            border-radius: 8px;
-            font-size: 0.95rem;
-            display: none;
-            z-index: 9999;
-            white-space: nowrap;
-        }
-    </style>
-</head>
-<body>
-
-<div class="header">
-    <h1>
-        <span class="bike-emoji" id="easterEggBike" title="Click to reset all data to defaults">🚲</span>
-        PedalPal Bike Rentals
-    </h1>
-    <p>Choose your adventure. Pedals provided. Excuses are extra.</p>
-</div>
-
-<div class="cards-container">
-    <div class="card" id="beachCard">
-        <div class="card-emoji">🏖️</div>
-        <h2>Beach Cruisers</h2>
-        <p>Laid-back frames, wide tires, and enough style to make the seagulls jealous. Perfect for boardwalks and gentle existential crises.</p>
-        <button class="card-btn beach-btn" onclick="window.location.href='beach-cruisers.html'">Browse Beach Cruisers</button>
-    </div>
-
-    <div class="card" id="mountainCard">
-        <div class="card-emoji">⛰️</div>
-        <h2>Mountain Bikes</h2>
-        <p>Suspension forks, aggressive geometry, and enough gears to confuse anyone who's never left the city. For people who think flat is boring.</p>
-        <button class="card-btn mountain-btn" onclick="window.location.href='mountain-bikes.html'">Browse Mountain Bikes</button>
-    </div>
-</div>
-
-<div class="footer">
-    <p>PedalPal &copy; 2008. All bikes should be real. All prices are made up. All deprecated code is intentional.</p>
-</div>
-
-<div class="reset-toast" id="resetToast"></div>
-
-<script>
-    // Reset button: click the bike emoji to reset all data to defaults.
-    // In .NET this was a hidden button that called ApplicationServices directly.
-    // In PHP this is a click handler that POSTs to bike-handler.php?action=reset.
-    // The architecture is simpler. The drama is the same.
-    // Previously required 3 clicks (because "two clicks might be accidental").
-    // That was clever. It was also why the reset button appeared not to work.
-    // One click. Direct. Unambiguous. Marginally less clever.
-    $('#easterEggBike').on('click', function() {
-        doReset();
-    });
-
-    function doReset() {
-        showToast('Resetting all data... 🔄');
-        $.ajax({
-            url: '/handlers/bike-handler.php?action=reset',
-            method: 'POST',
-            contentType: 'application/json',
-            success: function(response) {
-                showToast('✅ All data reset! Every bike is back. Every accessory is restocked. Time is a flat circle.');
-            },
-            error: function() {
-                showToast('❌ Reset failed. The bikes have escaped their defaults.');
+    <!-- ── Tailwind CSS ───────────────────────────────────────────────────── -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+                    animation:  { 'fade-up': 'fadeUp 0.5s ease-out both' },
+                    keyframes:  { fadeUp: { from: { opacity: 0, transform: 'translateY(20px)' }, to: { opacity: 1, transform: 'translateY(0)' } } },
+                }
             }
-        });
-    }
+        }
+    </script>
 
-    function showToast(message) {
-        var $toast = $('#resetToast');
-        $toast.text(message).fadeIn(200);
-        clearTimeout(window._toastTimer);
-        window._toastTimer = setTimeout(function() {
-            $toast.fadeOut(400);
-        }, 3000);
+    <!-- ── Google Fonts: Inter ────────────────────────────────────────────── -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+          rel="stylesheet">
+
+    <!-- ── JSON-LD Structured Data ───────────────────────────────────────── -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@graph": [
+            {
+                "@type": "WebSite",
+                "@id": "https://pedalpal.example.com/#website",
+                "url": "https://pedalpal.example.com/",
+                "name": "PedalPal Bike Rentals",
+                "description": "Premium Beach Cruiser and Mountain Bike rentals.",
+                "inLanguage": "en-US"
+            },
+            {
+                "@type": "LocalBusiness",
+                "@id": "https://pedalpal.example.com/#business",
+                "name": "PedalPal Bike Rentals",
+                "description": "Premium bike rental service offering Beach Cruisers and Mountain Bikes with instant booking and accessory add-ons.",
+                "url": "https://pedalpal.example.com/",
+                "logo": "https://pedalpal.example.com/og-image.png",
+                "priceRange": "$$",
+                "currenciesAccepted": "USD",
+                "paymentAccepted": "Credit Card, Cash",
+                "openingHours": "Mo-Su 08:00-20:00",
+                "hasOfferCatalog": {
+                    "@type": "OfferCatalog",
+                    "name": "Bike Rental Catalog",
+                    "itemListElement": [
+                        {
+                            "@type": "Offer",
+                            "name": "Beach Cruiser Rental",
+                            "description": "Wide-tyre beach cruisers perfect for boardwalks and coastal rides.",
+                            "url": "https://pedalpal.example.com/beach-cruisers.html",
+                            "priceCurrency": "USD",
+                            "price": "12.99",
+                            "priceSpecification": {
+                                "@type": "UnitPriceSpecification",
+                                "price": "12.99",
+                                "priceCurrency": "USD",
+                                "unitCode": "DAY",
+                                "unitText": "per day"
+                            }
+                        },
+                        {
+                            "@type": "Offer",
+                            "name": "Mountain Bike Rental",
+                            "description": "Full-suspension mountain bikes for trails and off-road adventures.",
+                            "url": "https://pedalpal.example.com/mountain-bikes.html",
+                            "priceCurrency": "USD",
+                            "price": "24.99",
+                            "priceSpecification": {
+                                "@type": "UnitPriceSpecification",
+                                "price": "24.99",
+                                "priceCurrency": "USD",
+                                "unitCode": "DAY",
+                                "unitText": "per day"
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "@type": "WebPage",
+                "@id": "https://pedalpal.example.com/#webpage",
+                "url": "https://pedalpal.example.com/",
+                "name": "PedalPal — Premium Bike Rentals | Beach Cruisers & Mountain Bikes",
+                "description": "Rent premium Beach Cruisers and Mountain Bikes at PedalPal. Instant booking, no paperwork.",
+                "isPartOf": { "@id": "https://pedalpal.example.com/#website" },
+                "about": { "@id": "https://pedalpal.example.com/#business" },
+                "inLanguage": "en-US"
+            }
+        ]
     }
-</script>
+    </script>
+</head>
+<body class="font-sans antialiased bg-slate-950 text-white min-h-screen">
+
+<!-- ─── Skip Navigation (keyboard / screen-reader users) ────────────────── -->
+<a href="#main-content"
+   class="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100]
+          focus:px-5 focus:py-3 focus:bg-white focus:text-slate-900
+          focus:rounded-xl focus:shadow-2xl focus:font-semibold focus:text-sm
+          focus:ring-2 focus:ring-sky-500 focus:outline-none transition-all">
+    Skip to main content
+</a>
+
+<!-- ─── Navbar ──────────────────────────────────────────────────────────── -->
+<nav aria-label="PedalPal main navigation"
+     class="fixed top-0 inset-x-0 z-40 bg-slate-950/80 backdrop-blur-md border-b border-white/5">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+        <a href="index.html"
+           aria-label="PedalPal — go to homepage"
+           class="flex items-center gap-2 font-bold text-lg">
+            <span id="easterEggBike"
+                  role="button"
+                  tabindex="0"
+                  aria-label="Secret: click to reset all demo data"
+                  title="Psst… click me to reset all data"
+                  class="cursor-pointer hover:scale-110 active:scale-95
+                         transition-transform duration-150 select-none text-2xl
+                         focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 rounded">🚲</span>
+            <span aria-hidden="true"
+                  class="bg-gradient-to-r from-sky-400 to-violet-400
+                         bg-clip-text text-transparent">PedalPal</span>
+        </a>
+        <div class="flex items-center gap-6 text-sm text-slate-400">
+            <a href="#how-it-works" class="hover:text-white transition-colors hidden sm:block">How It Works</a>
+            <a href="beach-cruisers.html"
+               class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-lg
+                      font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300">
+                Browse Bikes
+            </a>
+        </div>
+    </div>
+</nav>
+
+<!-- ─── Hero ────────────────────────────────────────────────────────────── -->
+<main id="main-content">
+<section aria-labelledby="hero-heading"
+         class="relative min-h-screen flex flex-col items-center justify-center
+                px-4 pt-24 pb-16 overflow-hidden">
+
+    <!-- Animated gradient orbs (purely decorative) -->
+    <div aria-hidden="true"
+         class="absolute top-1/4 -left-20 w-[500px] h-[500px]
+                bg-sky-600/15 rounded-full blur-3xl pointer-events-none
+                animate-[pulse_8s_ease-in-out_infinite]"></div>
+    <div aria-hidden="true"
+         class="absolute bottom-1/4 -right-20 w-[500px] h-[500px]
+                bg-violet-600/15 rounded-full blur-3xl pointer-events-none
+                animate-[pulse_10s_ease-in-out_infinite_2s]"></div>
+    <div aria-hidden="true"
+         class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96
+                bg-cyan-600/10 rounded-full blur-3xl pointer-events-none"></div>
+
+    <div class="relative text-center max-w-3xl mx-auto animate-fade-up">
+        <!-- Status badge -->
+        <p class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full
+                     bg-gradient-to-r from-sky-500/10 to-violet-500/10
+                     border border-sky-500/20 text-sky-400
+                     text-xs font-semibold tracking-wide mb-8">
+            <span aria-hidden="true" class="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse"></span>
+            Premium Bike Rental — Available Now
+        </p>
+
+        <h1 id="hero-heading"
+            class="text-5xl sm:text-6xl lg:text-7xl font-extrabold leading-[1.08]
+                   tracking-tight mb-6">
+            Your next
+            <span class="bg-gradient-to-r from-sky-400 via-cyan-300 to-violet-400
+                         bg-clip-text text-transparent"> adventure</span>
+            <br class="hidden sm:block">starts here.
+        </h1>
+
+        <p class="text-slate-400 text-lg sm:text-xl leading-relaxed max-w-xl mx-auto mb-10">
+            Browse 12 hand-picked bikes across two categories.
+            Rent instantly. Add accessories. No paperwork, no queues.
+        </p>
+
+        <div class="flex flex-col sm:flex-row gap-4 justify-center" role="group" aria-label="Browse bike categories">
+            <a href="beach-cruisers.html"
+               class="group flex items-center justify-center gap-2.5
+                      px-7 py-4 rounded-2xl
+                      bg-gradient-to-r from-pink-500 to-rose-500
+                      hover:from-pink-400 hover:to-rose-400
+                      text-white font-bold text-base
+                      shadow-xl shadow-pink-900/30
+                      transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl
+                      focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-300">
+                <span aria-hidden="true" class="text-xl">🏖️</span>
+                Beach Cruisers
+                <svg aria-hidden="true"
+                     class="w-4 h-4 opacity-70 group-hover:translate-x-0.5 transition-transform"
+                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                          d="M9 5l7 7-7 7"/>
+                </svg>
+            </a>
+            <a href="mountain-bikes.html"
+               class="group flex items-center justify-center gap-2.5
+                      px-7 py-4 rounded-2xl
+                      bg-gradient-to-r from-sky-500 to-cyan-500
+                      hover:from-sky-400 hover:to-cyan-400
+                      text-white font-bold text-base
+                      shadow-xl shadow-sky-900/30
+                      transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl
+                      focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300">
+                <span aria-hidden="true" class="text-xl">⛰️</span>
+                Mountain Bikes
+                <svg aria-hidden="true"
+                     class="w-4 h-4 opacity-70 group-hover:translate-x-0.5 transition-transform"
+                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                          d="M9 5l7 7-7 7"/>
+                </svg>
+            </a>
+        </div>
+
+        <!-- Trust indicators -->
+        <ul class="flex flex-wrap items-center justify-center gap-5 mt-10
+                   text-slate-500 text-xs font-medium list-none p-0 m-0"
+            aria-label="Service highlights">
+            <li class="flex items-center gap-1.5">
+                <span aria-hidden="true" class="text-emerald-400">✓</span> Instant booking
+            </li>
+            <li aria-hidden="true" class="w-px h-3 bg-slate-700"></li>
+            <li class="flex items-center gap-1.5">
+                <span aria-hidden="true" class="text-emerald-400">✓</span> No booking fee
+            </li>
+            <li aria-hidden="true" class="w-px h-3 bg-slate-700"></li>
+            <li class="flex items-center gap-1.5">
+                <span aria-hidden="true" class="text-emerald-400">✓</span> Bundle discounts
+            </li>
+            <li aria-hidden="true" class="w-px h-3 bg-slate-700"></li>
+            <li class="flex items-center gap-1.5">
+                <span aria-hidden="true" class="text-emerald-400">✓</span> Accessory add-ons
+            </li>
+        </ul>
+    </div>
+
+    <!-- Scroll indicator (decorative) -->
+    <div aria-hidden="true"
+         class="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center
+                gap-1 text-slate-600 text-xs animate-bounce">
+        <span>Scroll</span>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M19 9l-7 7-7-7"/>
+        </svg>
+    </div>
+</section>
+
+<!-- ─── Stats Bar ────────────────────────────────────────────────────────── -->
+<section aria-label="Fleet statistics" class="relative bg-white/5 border-y border-white/8 py-8 overflow-hidden">
+    <div class="absolute inset-0 bg-gradient-to-r from-sky-900/10 via-transparent to-violet-900/10
+                pointer-events-none"></div>
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 relative">
+        <dl class="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
+            <div class="flex flex-col items-center gap-1">
+                <dt class="text-3xl sm:text-4xl font-extrabold
+                           bg-gradient-to-r from-sky-400 to-cyan-300
+                           bg-clip-text text-transparent">12</dt>
+                <dd class="text-slate-400 text-sm">Bikes in Fleet</dd>
+            </div>
+            <div class="flex flex-col items-center gap-1">
+                <dt class="text-3xl sm:text-4xl font-extrabold
+                           bg-gradient-to-r from-violet-400 to-pink-400
+                           bg-clip-text text-transparent">4</dt>
+                <dd class="text-slate-400 text-sm">Accessories</dd>
+            </div>
+            <div class="flex flex-col items-center gap-1">
+                <dt class="text-3xl sm:text-4xl font-extrabold
+                           bg-gradient-to-r from-amber-400 to-orange-400
+                           bg-clip-text text-transparent">10%</dt>
+                <dd class="text-slate-400 text-sm">Bundle Discount</dd>
+            </div>
+            <div class="flex flex-col items-center gap-1">
+                <dt class="text-3xl sm:text-4xl font-extrabold
+                           bg-gradient-to-r from-emerald-400 to-teal-400
+                           bg-clip-text text-transparent">$0</dt>
+                <dd class="text-slate-400 text-sm">Booking Fee</dd>
+            </div>
+        </dl>
+    </div>
+</section>
+
+<!-- ─── Category Cards ───────────────────────────────────────────────────── -->
+<section aria-labelledby="choose-ride-heading" class="py-20 px-4 sm:px-6">
+    <div class="max-w-5xl mx-auto">
+        <div class="text-center mb-14">
+            <h2 id="choose-ride-heading" class="text-3xl sm:text-4xl font-extrabold mb-3">Choose Your Ride</h2>
+            <p class="text-slate-400 text-base max-w-md mx-auto">
+                Two categories, one mission: get you outdoors and moving.
+            </p>
+        </div>
+
+        <div class="grid sm:grid-cols-2 gap-6">
+
+            <!-- Beach Cruisers Card -->
+            <a href="beach-cruisers.html"
+               class="group relative overflow-hidden rounded-3xl border border-white/8
+                      bg-gradient-to-br from-pink-950/60 via-rose-900/40 to-orange-900/30
+                      hover:border-pink-500/40
+                      transition-all duration-300 hover:-translate-y-1.5
+                      hover:shadow-2xl hover:shadow-pink-900/30 p-8 flex flex-col">
+
+                <!-- Decorative blur circle -->
+                <div class="absolute -top-10 -right-10 w-40 h-40 bg-pink-500/20
+                            rounded-full blur-2xl pointer-events-none
+                            group-hover:scale-125 transition-transform duration-500"></div>
+
+                <div class="text-6xl mb-5 relative z-10
+                            group-hover:scale-110 transition-transform duration-300">
+                    🏖️
+                </div>
+                <h3 class="text-2xl font-extrabold mb-3 relative z-10">Beach Cruisers</h3>
+                <p class="text-slate-400 text-sm leading-relaxed mb-6 flex-1 relative z-10">
+                    Wide tyres, swept-back handlebars, and effortless style. Perfect for
+                    boardwalks, promenades, and anywhere the horizon looks inviting.
+                </p>
+
+                <div class="flex flex-wrap gap-2 mb-6 relative z-10">
+                    <span class="px-2.5 py-1 rounded-full bg-pink-500/10 text-pink-300
+                                 text-xs font-semibold border border-pink-500/20">
+                        6 Bikes
+                    </span>
+                    <span class="px-2.5 py-1 rounded-full bg-pink-500/10 text-pink-300
+                                 text-xs font-semibold border border-pink-500/20">
+                        Upright Riding
+                    </span>
+                    <span class="px-2.5 py-1 rounded-full bg-pink-500/10 text-pink-300
+                                 text-xs font-semibold border border-pink-500/20">
+                        From $12.99/day
+                    </span>
+                </div>
+
+                <div class="flex items-center gap-2 text-pink-400 font-bold text-sm
+                            group-hover:gap-3 transition-all duration-200 relative z-10">
+                    <span>Browse Beach Cruisers</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                              d="M9 5l7 7-7 7"/>
+                    </svg>
+                </div>
+            </a>
+
+            <!-- Mountain Bikes Card -->
+            <a href="mountain-bikes.html"
+               class="group relative overflow-hidden rounded-3xl border border-white/8
+                      bg-gradient-to-br from-sky-950/60 via-cyan-900/40 to-teal-900/30
+                      hover:border-sky-500/40
+                      transition-all duration-300 hover:-translate-y-1.5
+                      hover:shadow-2xl hover:shadow-sky-900/30 p-8 flex flex-col">
+
+                <!-- Decorative blur circle -->
+                <div class="absolute -top-10 -right-10 w-40 h-40 bg-sky-500/20
+                            rounded-full blur-2xl pointer-events-none
+                            group-hover:scale-125 transition-transform duration-500"></div>
+
+                <div class="text-6xl mb-5 relative z-10
+                            group-hover:scale-110 transition-transform duration-300">
+                    ⛰️
+                </div>
+                <h3 class="text-2xl font-extrabold mb-3 relative z-10">Mountain Bikes</h3>
+                <p class="text-slate-400 text-sm leading-relaxed mb-6 flex-1 relative z-10">
+                    Suspension forks, aggressive geometry, and enough gears to tackle
+                    any trail. For riders who find flat terrain an unsatisfying concept.
+                </p>
+
+                <div class="flex flex-wrap gap-2 mb-6 relative z-10">
+                    <span class="px-2.5 py-1 rounded-full bg-sky-500/10 text-sky-300
+                                 text-xs font-semibold border border-sky-500/20">
+                        6 Bikes
+                    </span>
+                    <span class="px-2.5 py-1 rounded-full bg-sky-500/10 text-sky-300
+                                 text-xs font-semibold border border-sky-500/20">
+                        Full Suspension
+                    </span>
+                    <span class="px-2.5 py-1 rounded-full bg-sky-500/10 text-sky-300
+                                 text-xs font-semibold border border-sky-500/20">
+                        From $24.99/day
+                    </span>
+                </div>
+
+                <div class="flex items-center gap-2 text-sky-400 font-bold text-sm
+                            group-hover:gap-3 transition-all duration-200 relative z-10">
+                    <span>Browse Mountain Bikes</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                              d="M9 5l7 7-7 7"/>
+                    </svg>
+                </div>
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- ─── How It Works ─────────────────────────────────────────────────────── -->
+<section id="how-it-works" aria-labelledby="how-it-works-heading" class="py-20 px-4 sm:px-6">
+    <div class="max-w-4xl mx-auto text-center">
+        <h2 id="how-it-works-heading" class="text-3xl sm:text-4xl font-extrabold mb-3">How It Works</h2>
+        <p class="text-slate-400 mb-14 text-base">From browse to ride in three simple steps.</p>
+
+        <div class="grid sm:grid-cols-3 gap-5 text-left relative">
+            <!-- Connector line (desktop only, decorative) -->
+            <div aria-hidden="true"
+                 class="absolute hidden sm:block top-8 left-[calc(1/6*100%)] right-[calc(1/6*100%)]
+                        h-px bg-gradient-to-r from-violet-500/30 via-sky-500/30 to-emerald-500/30
+                        pointer-events-none"></div>
+
+            <div class="relative p-6 rounded-2xl bg-white/5 border border-white/8
+                        hover:bg-white/8 transition-colors duration-200">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600
+                            flex items-center justify-center font-extrabold text-white text-lg
+                            mb-5 shadow-lg shadow-violet-900/30">1</div>
+                <h3 class="font-bold text-white text-base mb-2">Browse the Fleet</h3>
+                <p class="text-slate-400 text-sm leading-relaxed">
+                    Filter by availability, sort by price or name. See real-time
+                    availability so you know exactly what's on offer.
+                </p>
+            </div>
+
+            <div class="relative p-6 rounded-2xl bg-white/5 border border-white/8
+                        hover:bg-white/8 transition-colors duration-200">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-500 to-cyan-500
+                            flex items-center justify-center font-extrabold text-white text-lg
+                            mb-5 shadow-lg shadow-sky-900/30">2</div>
+                <h3 class="font-bold text-white text-base mb-2">Rent Instantly</h3>
+                <p class="text-slate-400 text-sm leading-relaxed">
+                    Click Rent Now. The bike is reserved immediately with a single click.
+                    No forms, no queues, no paperwork.
+                </p>
+            </div>
+
+            <div class="relative p-6 rounded-2xl bg-white/5 border border-white/8
+                        hover:bg-white/8 transition-colors duration-200">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500
+                            flex items-center justify-center font-extrabold text-white text-lg
+                            mb-5 shadow-lg shadow-emerald-900/30">3</div>
+                <h3 class="font-bold text-white text-base mb-2">Add Accessories</h3>
+                <p class="text-slate-400 text-sm leading-relaxed">
+                    Grab a helmet, water bottle, or lock. Pair a Water Bottle + Bike Light
+                    for an automatic <strong class="text-amber-400">10% bundle discount</strong>.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ─── Accessories Highlight ────────────────────────────────────────────── -->
+<section aria-labelledby="bundle-heading" class="py-14 px-4 sm:px-6">
+    <div class="max-w-4xl mx-auto">
+        <div class="relative overflow-hidden rounded-3xl p-8 sm:p-12
+                    bg-gradient-to-br from-amber-900/30 via-amber-800/20 to-orange-900/20
+                    border border-amber-700/30">
+            <div aria-hidden="true"
+                 class="absolute -right-10 -bottom-10 w-48 h-48 bg-amber-500/10
+                        rounded-full blur-3xl pointer-events-none"></div>
+            <div class="flex flex-col sm:flex-row sm:items-center gap-6 relative z-10">
+                <div aria-hidden="true"
+                     class="w-16 h-16 rounded-2xl bg-amber-500/20 border border-amber-500/30
+                            flex items-center justify-center text-3xl shrink-0">🎁</div>
+                <div class="flex-1">
+                    <h3 id="bundle-heading" class="text-xl sm:text-2xl font-extrabold text-white mb-2">
+                        Bundle &amp; Save 10%
+                    </h3>
+                    <p class="text-amber-200/80 text-sm leading-relaxed">
+                        Add a <strong class="text-amber-300">Water Bottle</strong> and
+                        <strong class="text-amber-300">Bike Light</strong> to any rental
+                        and we'll automatically apply a 10% discount on your entire
+                        accessory order. No code needed.
+                    </p>
+                </div>
+                <a href="beach-cruisers.html"
+                   class="shrink-0 px-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-400
+                          text-slate-900 font-bold text-sm transition-colors
+                          shadow-lg shadow-amber-900/30 whitespace-nowrap">
+                    Rent a Bike →
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ─── Footer ───────────────────────────────────────────────────────────── -->
+</main><!-- end #main-content -->
+<footer role="contentinfo" class="border-t border-white/5 py-8 px-4">
+    <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center
+                justify-between gap-4 text-slate-500 text-sm">
+        <p>© 2026 PedalPal Bike Rentals. All rides are real. All prices are approximate.</p>
+        <div class="flex gap-6">
+            <a href="beach-cruisers.html" class="hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 rounded">Beach Cruisers</a>
+            <a href="mountain-bikes.html" class="hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 rounded">Mountain Bikes</a>
+        </div>
+    </div>
+</footer>
+
+<!-- ─── Scripts ──────────────────────────────────────────────────────────── -->
+<script type="module" src="js/pages/home.js"></script>
 
 </body>
 </html>

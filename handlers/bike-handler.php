@@ -1,27 +1,20 @@
 <?php
-// Suppress deprecation notices and warnings so they don't corrupt the JSON output.
-// PHP 7 is not shy about telling you things are deprecated. It will shout it directly
-// into your response body, ruining the JSON and your afternoon simultaneously.
-// E_ALL & ~E_DEPRECATED & ~E_NOTICE: still see real errors, just not the passive-aggressive ones.
-error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE);
-
 /**
  * bike-handler.php
  *
- * IHttpHandler is gone. ApiController is gone. It's just a PHP file that outputs JSON.
- * The architecture diagram for this would be a single box labeled 'bike-handler.php'
- * with an arrow pointing to it labeled 'everything'.
+ * GET  ?action=beach|mountain  — list all bikes of the requested type
+ * POST ?action=rent             — mark one bike as rented
+ * POST ?action=reset            — restore all data to factory defaults (dev only)
  *
- * In .NET, routing lived in RouteConfig.cs, handlers in Web.config,
- * and the pipeline had HttpModules, HttpHandlers, and application lifecycle events
- * that nobody fully understood but everyone was afraid to touch.
- * Here, the browser sends a request. Apache finds this file. This file runs.
- * No pipeline. No handlers. No modules. Just vibes and file_get_contents.
+ * Security hardening applied here:
+ *  - All response headers emitted via apply_security_headers() (centralised, SRP).
+ *  - JSON decoding via safe_json_decode() — no `@` error suppressor, explicit
+ *    size cap (64 KB), and descriptive parse-error messages.
+ *  - bikeId validated to be a positive integer before service call.
+ *  - Unknown actions and methods return HTTP 400/405; execution halts.
  */
 
-// require_once: because nothing says "enterprise PHP" like manually listing every file
-// you need at the top. No autoloading. No composer (well, not yet). Just you and your
-// directory structure and a quiet optimism that nothing is circular.
+require_once __DIR__ . '/_security.php';
 require_once __DIR__ . '/../data/BeachCruiserRepository.php';
 require_once __DIR__ . '/../data/MountainBikeRepository.php';
 require_once __DIR__ . '/../data/AccessoryRepository.php';
@@ -30,37 +23,21 @@ require_once __DIR__ . '/../services/MountainBikeService.php';
 require_once __DIR__ . '/../services/AccessoryService.php';
 require_once __DIR__ . '/../services/ApplicationServices.php';
 
-// Initialize all services. Every. Single. Request.
-// In .NET, Application_Start ran once and everything lived warm in memory forever.
-// Here, every request is born, loads the world from disk, answers one question, and dies.
-// It's philosophically humbling. It's also slower than it needs to be. Same thing.
+// Security headers first — before any output.
+apply_security_headers();
+
 $dataFolder = __DIR__ . '/../SampleData';
 ApplicationServices::initialize($dataFolder);
 
-// Headers first. Always set headers before any output.
-// PHP will let you forget this exactly once before delivering a "headers already sent"
-// warning that points to line 1 of some file you didn't even know was loaded.
-// Lesson learned the hard way by every PHP developer since approximately 2003.
-header('Content-Type: application/json');
-header('Cache-Control: no-cache, no-store, must-revalidate');
-header('Pragma: no-cache');
-header('Expires: 0');
+error_reporting(E_ALL & ~E_NOTICE);
 
-// Dispatch on action. A switch statement. The original router.
-// In .NET WebAPI this was attribute routing, model binding, and content negotiation.
-// There were verbs and nouns and HTTP semantics to respect.
-// Here it is: switch ($_GET['action']). Fast. Honest. Utterly without ceremony.
-$action = isset($_GET['action']) ? $_GET['action'] : '';
+$action = isset($_GET['action']) ? (string)$_GET['action'] : '';
 
 switch ($action) {
 
+    // ── GET: list all beach cruisers ──────────────────────────────────────────
     case 'beach':
-        // GET: return all beach cruisers as JSON.
-        // htmlspecialchars() on every string field because we are responsible developers
-        // who have seen what happens when you aren't. We do not speak of it.
-        // intval() instead of (int) cast — they do the same thing, intval() has more letters,
-        // and old PHP code is full of it. Some habits are older than the deprecation system.
-        $bikes = ApplicationServices::getBeachCruiserService()->getAll();
+        $bikes  = ApplicationServices::getBeachCruiserService()->getAll();
         $result = [];
         foreach ($bikes as $bike) {
             $result[] = [
@@ -75,12 +52,9 @@ switch ($action) {
         echo json_encode($result);
         break;
 
+    // ── GET: list all mountain bikes ──────────────────────────────────────────
     case 'mountain':
-        // GET: return all mountain bikes as JSON.
-        // PascalCase keys to match what the frontend expects, which matches the JSON source.
-        // snake_case for beach cruisers, PascalCase for mountain bikes.
-        // Consistency is a journey. We are still on the bus.
-        $bikes = ApplicationServices::getMountainBikeService()->getAll();
+        $bikes  = ApplicationServices::getMountainBikeService()->getAll();
         $result = [];
         foreach ($bikes as $bike) {
             $result[] = [
@@ -99,68 +73,56 @@ switch ($action) {
         echo json_encode($result);
         break;
 
+    // ── POST: rent a bike ─────────────────────────────────────────────────────
     case 'rent':
-        // POST: rent a bike. Read JSON from request body.
-        // Note the @ before json_decode. The @ operator suppresses errors.
-        // It has been frowned upon since approximately PHP 4. It is here anyway.
-        // It's the duct tape of PHP error handling: you know you shouldn't, but it holds.
-        // We check json_last_error() nowhere. The @ just absorbs the screaming. Serene.
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            echo json_encode(['Success' => false, 'Message' => 'Method not allowed. POST only. This is not negotiable.']);
-            break;
+            json_error(405, 'Method Not Allowed. Use POST to rent a bike.');
         }
 
         $body = file_get_contents('php://input');
-        $data = @json_decode($body, true); // @ suppresses the parse error warning. Feels wrong. Works.
+        $data = safe_json_decode($body, $parseError);
 
         if ($data === null) {
-            http_response_code(400);
-            echo json_encode(['Success' => false, 'Message' => 'Invalid JSON in request body.']);
-            break;
+            json_error(400, $parseError ?? 'Invalid request body.');
         }
 
-        $bikeType = isset($data['bikeType']) ? $data['bikeType'] : '';
-        $bikeId   = isset($data['bikeId'])   ? intval($data['bikeId']) : 0;
+        $bikeType = isset($data['bikeType']) ? (string)$data['bikeType'] : '';
+        $bikeId   = isset($data['bikeId'])   ? intval($data['bikeId'])   : 0;
 
+        // Validate bikeId — must be a positive integer.
+        if ($bikeId <= 0) {
+            json_error(400, 'Invalid bikeId. Must be a positive integer.');
+        }
+
+        // Validate bikeType against the known whitelist.
         if ($bikeType === 'beach') {
             $success = ApplicationServices::getBeachCruiserService()->rentBike($bikeId);
         } elseif ($bikeType === 'mountain') {
             $success = ApplicationServices::getMountainBikeService()->rentBike($bikeId);
         } else {
-            http_response_code(400);
-            echo json_encode(['Success' => false, 'Message' => 'Unknown bikeType. Expected "beach" or "mountain". We do not offer "hovercraft".']);
-            break;
+            json_error(400, 'Unknown bikeType "' . htmlspecialchars($bikeType, ENT_QUOTES, 'UTF-8') . '". Expected "beach" or "mountain".');
         }
 
         if ($success) {
-            echo json_encode(['Success' => true, 'Message' => 'Bike rented successfully. Enjoy the ride. Wear a helmet.']);
+            echo json_encode(['Success' => true,  'Message' => 'Bike rented successfully. Enjoy the ride.']);
         } else {
-            echo json_encode(['Success' => false, 'Message' => 'Bike is not available or does not exist. Both are equally sad.']);
+            echo json_encode(['Success' => false, 'Message' => 'Bike is not available or does not exist.']);
         }
         break;
 
+    // ── POST: reset all data to defaults (development helper) ─────────────────
     case 'reset':
-        // POST: reset all data to defaults.
-        // The chaos button. The undo-everything button. The "pretend nothing happened" button.
-        // In production, this endpoint would not exist.
-        // This is not production. This is a bike rental demo with a PHP 7 backend
-        // that is politely daring you to upgrade it. Take the hint.
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            echo json_encode(['Success' => false, 'Message' => 'Method not allowed.']);
-            break;
+            json_error(405, 'Method Not Allowed. Use POST.');
         }
 
         ApplicationServices::getBeachCruiserService()->resetToDefaults();
         ApplicationServices::getMountainBikeService()->resetToDefaults();
         ApplicationServices::getAccessoryService()->resetToDefaults();
 
-        echo json_encode(['Success' => true, 'Message' => 'All data reset to defaults. It is as if nothing happened. Nothing ever happened.']);
+        echo json_encode(['Success' => true, 'Message' => 'All data reset to defaults.']);
         break;
 
     default:
-        http_response_code(400);
-        echo json_encode(['Success' => false, 'Message' => 'Unknown action: ' . htmlspecialchars($action, ENT_QUOTES, 'UTF-8')]);
-        break;
+        json_error(400, 'Unknown action: ' . htmlspecialchars($action, ENT_QUOTES, 'UTF-8'));
 }

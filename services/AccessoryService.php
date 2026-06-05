@@ -50,20 +50,19 @@ class AccessoryService {
      * @return array
      */
     public function getCompatibleWith($bikeType) {
-        $bikeType = filter_var($bikeType, FILTER_SANITIZE_STRING); // FILTER_SANITIZE_STRING: works in PHP 7, less so later
+        // PHP 8 fix: FILTER_SANITIZE_STRING was deprecated in 8.1 and removed in 8.4.
+        // htmlspecialchars() provides the same XSS-stripping intent, explicitly.
+        $bikeType = htmlspecialchars(strip_tags((string)$bikeType), ENT_QUOTES, 'UTF-8');
         $bikeType = strtolower(trim($bikeType));
 
         $accessories = $this->repo->getAll();
 
-        // create_function(): eval in a trench coat. Been deprecated since PHP 7.2.
-        // The $bikeType variable is interpolated into the string body because
-        // create_function() has no 'use' clause — it's not a closure, it's a string that runs.
-        // addslashes() is here to keep $bikeType from accidentally becoming PHP code.
-        // "Accidentally becoming PHP code" is the kind of sentence that should give you pause.
-        $filterFn = create_function(
-            '$accessory',
-            'return in_array("' . addslashes($bikeType) . '", $accessory["CompatibleWith"]) || in_array("all", $accessory["CompatibleWith"]);'
-        );
+        // PHP 8 fix: create_function() was removed in PHP 8.0.
+        // Replaced with a proper closure using 'use' — no string interpolation, no eval risk.
+        $filterFn = function($accessory) use ($bikeType) {
+            return in_array($bikeType, $accessory['CompatibleWith'])
+                || in_array('all', $accessory['CompatibleWith']);
+        };
 
         return array_values(array_filter($accessories, $filterFn));
     }

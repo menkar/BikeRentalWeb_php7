@@ -7,7 +7,7 @@
         "SuspensionType": "Full",
         "FrameMaterial": "Aluminum",
         "DailyRate": 24.99,
-        "IsAvailable": true,
+        "IsAvailable": false,
         "Terrain": "All-Mountain",
         "WeightKg": 13.5
     },
@@ -31,7 +31,7 @@
         "SuspensionType": "Hardtail",
         "FrameMaterial": "Steel",
         "DailyRate": 19.99,
-        "IsAvailable": false,
+        "IsAvailable": true,
         "Terrain": "Cross-Country",
         "WeightKg": 14.8
     },

@@ -5,7 +5,7 @@
         "Category": "Hydration",
         "Description": "Keeps your water cold and your excuses for stopping minimal.",
         "UnitPrice": 2.99,
-        "StockCount": 15,
+        "StockCount": 9,
         "CompatibleWith": [
             "mountain",
             "beach"
@@ -17,7 +17,7 @@
         "Category": "Storage",
         "Description": "Holds your picnic, your sunscreen, and one very small dog.",
         "UnitPrice": 4.99,
-        "StockCount": 8,
+        "StockCount": 7,
         "CompatibleWith": [
             "beach"
         ]
@@ -28,7 +28,7 @@
         "Category": "Safety",
         "Description": "Because riding in the dark and just hoping for the best is not a strategy.",
         "UnitPrice": 3.49,
-        "StockCount": 20,
+        "StockCount": 15,
         "CompatibleWith": [
             "mountain",
             "beach"
@@ -40,7 +40,7 @@
         "Category": "Storage",
         "Description": "Straps to your frame. Carries snacks. Does not carry your feelings.",
         "UnitPrice": 5.99,
-        "StockCount": 6,
+        "StockCount": 4,
         "CompatibleWith": [
             "mountain"
         ]

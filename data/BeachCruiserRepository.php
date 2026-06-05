@@ -1,19 +1,21 @@
 <?php
+require_once __DIR__ . '/AbstractFileRepository.php';
+
 /**
  * BeachCruiserRepository
  *
- * Loads beach cruiser data from XML, caches it with serialize().
+ * Persists beach cruiser data as XML with a serialize() cache sidecar.
  *
- * serialize()/unserialize() — PHP's version of "I'll just save this as a blob."
- * Works great until someone manually edits the .cache file, at which point
- * unserialize() returns false and offers no further comment on the matter.
- * The PHP equivalent of opening a mystery tupperware from the fridge.
- * You asked for leftovers. You got false. No refunds.
+ * Extends AbstractFileRepository — caching, file locking, and secure
+ * deserialization are all inherited. This class provides only the
+ * beach-cruiser-specific parsing (loadFromSource) and persistence (save).
+ *
+ * SOLID:
+ *  - S: Responsible only for beach-cruiser XML parsing and serialisation.
+ *  - O: Cache strategy changes in the base; XML format changes here only.
+ *  - L: Fully substitutable for AbstractFileRepository in tests.
  */
-class BeachCruiserRepository {
-
-    private $dataPath;
-    private $cachePath;
+class BeachCruiserRepository extends AbstractFileRepository {
 
     public function __construct($dataFolder) {
         $this->dataPath  = $dataFolder . DIRECTORY_SEPARATOR . 'beach_cruisers.xml';
@@ -21,111 +23,76 @@ class BeachCruiserRepository {
     }
 
     /**
-     * Get all beach cruisers.
-     *
-     * Checks if the .cache sidecar is newer than the .xml source.
-     * If yes: deserializes the blob and returns it. Fast. Opaque. Trusting.
-     * If no: parses the XML, serializes the result, saves it, returns it.
-     * If the cache is corrupt: silently falls back to XML with the energy of
-     * someone who has been through this before and no longer finds it interesting.
-     *
-     * @return array
-     */
-    public function getAll() {
-        if ($this->isCacheFresh()) {
-            $cached = unserialize(file_get_contents($this->cachePath));
-            if ($cached !== false) {
-                return $cached;
-            }
-            // unserialize() returned false. The cache file is either corrupt,
-            // edited by hand, or haunted. All three are equally possible.
-            // We fall through to the XML and say nothing of it.
-        }
-
-        $bikes = $this->loadFromXml();
-        file_put_contents($this->cachePath, serialize($bikes));
-        return $bikes;
-    }
-
-    /**
      * Save bikes back to XML and refresh the cache.
-     * The file is the database. The cache is the optimization.
-     * Together they are a persistence layer with exactly zero transactions.
+     *
+     * Writes via _writeFile() (inherited) which holds LOCK_EX throughout,
+     * preventing concurrent-write corruption.
      *
      * @param array $bikes
      */
-    public function save($bikes) {
-        $this->writeToXml($bikes);
-        file_put_contents($this->cachePath, serialize($bikes));
+    public function save(array $bikes) {
+        $this->_writeFile($this->_buildXml($bikes));
+        $this->_writeCache($bikes);
     }
 
+    // ─── AbstractFileRepository contract ─────────────────────────────────────
+
     /**
-     * Returns true if the cache file exists and is newer than the data file.
-     * filemtime() is unaware of time zones and doesn't care. Neither do we.
+     * Parse beach_cruisers.xml into a plain PHP array.
+     * Cast every SimpleXMLElement value to a scalar type before storing;
+     * leaving them as SimpleXMLElement objects causes subtle bugs downstream.
+     *
+     * @return array
      */
-    private function isCacheFresh() {
-        if (!file_exists($this->cachePath)) {
-            return false;
-        }
+    protected function loadFromSource() {
         if (!file_exists($this->dataPath)) {
-            return false;
+            return [];
         }
-        return filemtime($this->cachePath) >= filemtime($this->dataPath);
-    }
 
-    /**
-     * Load bikes from XML using SimpleXML.
-     * SimpleXML turns XML nodes into magic objects that look like arrays,
-     * act like strings, and are secretly neither. Cast everything to string
-     * or PHP will hand you a SimpleXMLElement when you asked for a name.
-     * You've been warned. We learned the hard way so you didn't have to.
-     */
-    private function loadFromXml() {
-        $xml = simplexml_load_file($this->dataPath);
+        $xml = @simplexml_load_file($this->dataPath);
+        if ($xml === false) {
+            return [];
+        }
+
         $bikes = [];
-
-        foreach ($xml->Bike as $bikeNode) {
+        foreach ($xml->Bike as $node) {
             $bikes[] = [
-                'bike_id'      => intval((string)$bikeNode->bike_id),
-                'model_name'   => (string)$bikeNode->model_name,
-                'color'        => (string)$bikeNode->color,
-                'frame_size'   => (string)$bikeNode->frame_size,
-                'daily_rate'   => floatval((string)$bikeNode->daily_rate),
-                'is_available' => ((string)$bikeNode->is_available === 'true'),
+                'bike_id'      => intval((string)$node->bike_id),
+                'model_name'   => (string)$node->model_name,
+                'color'        => (string)$node->color,
+                'frame_size'   => (string)$node->frame_size,
+                'daily_rate'   => floatval((string)$node->daily_rate),
+                'is_available' => ((string)$node->is_available === 'true'),
             ];
         }
 
         return $bikes;
     }
 
+    // ─── Private ──────────────────────────────────────────────────────────────
+
     /**
-     * Write bikes back to XML.
+     * Build a well-formed XML string from the bikes array.
+     * Returns the string so _writeFile() can write it atomically with LOCK_EX.
      *
-     * Uses each() to iterate over the array with the internal array pointer.
-     * each() was already old when most PHP developers learned to code.
-     * foreach() has been the right answer since PHP 4. We use each() anyway.
-     * You will notice this when you run it on PHP 8, because each() will be gone
-     * and replaced by a very clear error message. Consider this foreshadowing.
-     * reset() is called first because each() will start wherever the pointer is,
-     * and if something moved it, we'd skip bikes. We reset. We iterate. We persist.
+     * @param  array  $bikes
+     * @return string XML
      */
-    private function writeToXml($bikes) {
+    private function _buildXml(array $bikes) {
         $xml = new SimpleXMLElement('<?xml version="1.0" encoding="utf-8"?><BeachCruisers/>');
 
-        reset($bikes); // Reset internal array pointer. each() needs this. foreach() would not.
-        while ($entry = each($bikes)) { // each() — been deprecated since 7.2, gone in 8.0. A ghost that still works here.
-            $bike = $entry['value'];
-            $bikeNode = $xml->addChild('Bike');
-            $bikeNode->addChild('bike_id',      $bike['bike_id']);
-            $bikeNode->addChild('model_name',   htmlspecialchars($bike['model_name']));
-            $bikeNode->addChild('color',        htmlspecialchars($bike['color']));
-            $bikeNode->addChild('frame_size',   htmlspecialchars($bike['frame_size']));
-            $bikeNode->addChild('daily_rate',   $bike['daily_rate']);
-            $bikeNode->addChild('is_available', $bike['is_available'] ? 'true' : 'false');
+        foreach ($bikes as $bike) {
+            $node = $xml->addChild('Bike');
+            $node->addChild('bike_id',      $bike['bike_id']);
+            $node->addChild('model_name',   htmlspecialchars($bike['model_name']));
+            $node->addChild('color',        htmlspecialchars($bike['color']));
+            $node->addChild('frame_size',   htmlspecialchars($bike['frame_size']));
+            $node->addChild('daily_rate',   $bike['daily_rate']);
+            $node->addChild('is_available', $bike['is_available'] ? 'true' : 'false');
         }
 
         $dom = dom_import_simplexml($xml)->ownerDocument;
         $dom->formatOutput = true;
-        $dom->save($this->dataPath);
+        return $dom->saveXML();
     }
 }

@@ -1,22 +1,21 @@
 <?php
-// Same error_reporting suppression as bike-handler.php.
-// AccessoryService uses create_function() and FILTER_SANITIZE_STRING, both of which
-// PHP 7 will complain about loudly if you let it.
-// We do not let it. Silence, deprecated functions. You still work. That's enough.
-error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE);
-
 /**
  * accessory-handler.php
  *
- * GET: return accessories (all, or filtered by bikeType).
- * POST: process an order. Validate stock. Apply bundle deal. Deduct. Save. Return JSON.
+ * GET  ?bikeType=beach|mountain  — list accessories compatible with a bike type
+ * GET  (no bikeType)             — list all accessories
+ * POST (body: JSON array)        — process an accessory order
  *
- * In .NET this was an ApiController with [HttpGet] and [HttpPost] attributes,
- * model binding, and a pipeline that handled content negotiation automatically.
- * Here it is an if/else on $_SERVER['REQUEST_METHOD'].
- * Same outcome. Fewer annotations. More character.
+ * Security hardening applied here:
+ *  - All response headers emitted via apply_security_headers() (centralised, SRP).
+ *  - JSON decoding via safe_json_decode() — no `@` error suppressor, 64 KB hard cap.
+ *  - POST payload validated for array type and capped at MAX_ORDER_ITEMS (20)
+ *    to prevent abuse through oversized order arrays.
+ *  - Individual item fields validated as integer before being forwarded to the
+ *    service layer; the service layer still performs its own stock validation.
  */
 
+require_once __DIR__ . '/_security.php';
 require_once __DIR__ . '/../data/BeachCruiserRepository.php';
 require_once __DIR__ . '/../data/MountainBikeRepository.php';
 require_once __DIR__ . '/../data/AccessoryRepository.php';
@@ -25,30 +24,31 @@ require_once __DIR__ . '/../services/MountainBikeService.php';
 require_once __DIR__ . '/../services/AccessoryService.php';
 require_once __DIR__ . '/../services/ApplicationServices.php';
 
+// Security headers first — before any output.
+apply_security_headers();
+
 $dataFolder = __DIR__ . '/../SampleData';
 ApplicationServices::initialize($dataFolder);
 
-header('Content-Type: application/json');
-header('Cache-Control: no-cache, no-store, must-revalidate');
-header('Pragma: no-cache');
-header('Expires: 0');
+error_reporting(E_ALL & ~E_NOTICE);
+
+/** Maximum number of distinct accessory lines accepted in a single order. */
+define('MAX_ORDER_ITEMS', 20);
 
 $method = $_SERVER['REQUEST_METHOD'];
 
+// ── GET: fetch accessories ────────────────────────────────────────────────────
 if ($method === 'GET') {
-    // Return accessories, optionally filtered by bikeType.
-    // getCompatibleWith() uses create_function() internally, which PHP would like you to know
-    // it finds distasteful. We've asked it to keep its opinions to itself (see top of file).
-    $accessoryService = ApplicationServices::getAccessoryService();
+    $service = ApplicationServices::getAccessoryService();
 
-    if (isset($_GET['bikeType']) && $_GET['bikeType'] !== '') {
-        $accessories = $accessoryService->getCompatibleWith($_GET['bikeType']);
+    $bikeType = isset($_GET['bikeType']) ? trim((string)$_GET['bikeType']) : '';
+
+    if ($bikeType !== '') {
+        $accessories = $service->getCompatibleWith($bikeType);
     } else {
-        $accessories = $accessoryService->getAll();
+        $accessories = $service->getAll();
     }
 
-    // Sanitize string fields. htmlspecialchars() is the old reliable bouncer at the XSS door.
-    // Not glamorous. Does the job.
     $result = [];
     foreach ($accessories as $acc) {
         $result[] = [
@@ -63,34 +63,44 @@ if ($method === 'GET') {
     }
 
     echo json_encode($result);
+    exit;
+}
 
-} elseif ($method === 'POST') {
-    // Process an accessory order.
-    // @ on json_decode: see bike-handler.php for the full philosophical treatise.
-    // Short version: it suppresses warnings, it's been discouraged for 15 years,
-    // and it absolutely still works. The PHP manual sighs every time.
+// ── POST: process an order ────────────────────────────────────────────────────
+if ($method === 'POST') {
     $body = file_get_contents('php://input');
-    $data = @json_decode($body, true); // @ error suppressor. Old faithful. Tired but functional.
+    $data = safe_json_decode($body, $parseError);
 
-    if ($data === null || !is_array($data)) {
-        http_response_code(400);
-        echo json_encode([
-            'Success'              => false,
-            'Message'              => 'Invalid JSON body. Expected an array of {AccessoryID, Quantity} objects. Got something else entirely.',
-            'TotalPrice'           => 0.0,
-            'DiscountAmount'       => 0.0,
-            'BundleDiscountApplied' => false,
-        ]);
-        exit;
+    if ($data === null) {
+        json_error(400, $parseError ?? 'Invalid JSON in request body.');
     }
 
-    $result = ApplicationServices::getAccessoryService()->processOrder($data);
-    echo json_encode($result);
+    // Must be a non-empty array.
+    if (!is_array($data) || empty($data)) {
+        json_error(400, 'Request body must be a non-empty JSON array of {AccessoryID, Quantity} objects.');
+    }
 
-} else {
-    http_response_code(405);
-    echo json_encode([
-        'Success'  => false,
-        'Message'  => 'Method not allowed. GET to browse. POST to buy. ' . $method . ' to confuse everyone.',
-    ]);
+    // Guard against oversized payloads (DoS mitigation).
+    if (count($data) > MAX_ORDER_ITEMS) {
+        json_error(400, 'Order exceeds the maximum of ' . MAX_ORDER_ITEMS . ' line items per request.');
+    }
+
+    // Sanitise each item: AccessoryID and Quantity must be positive integers.
+    $sanitised = [];
+    foreach ($data as $item) {
+        if (!is_array($item)) {
+            json_error(400, 'Each order item must be a JSON object with AccessoryID and Quantity.');
+        }
+        $sanitised[] = [
+            'AccessoryID' => intval($item['AccessoryID'] ?? 0),
+            'Quantity'    => intval($item['Quantity']    ?? 0),
+        ];
+    }
+
+    $result = ApplicationServices::getAccessoryService()->processOrder($sanitised);
+    echo json_encode($result);
+    exit;
 }
+
+// ── Any other method ──────────────────────────────────────────────────────────
+json_error(405, 'Method Not Allowed. Use GET to browse accessories, POST to order.');

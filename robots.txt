@@ -1,0 +1,15 @@
+# PedalPal Bike Rentals — robots.txt
+# https://www.robotstxt.org/
+
+# Allow all crawlers full access
+User-agent: *
+Allow: /
+
+# Block access to PHP handler endpoints (not useful to crawlers)
+Disallow: /handlers/
+Disallow: /data/
+Disallow: /services/
+Disallow: /SampleData/
+
+# Sitemap location
+Sitemap: https://pedalpal.example.com/sitemap.xml

@@ -1,20 +1,19 @@
 <?php
+require_once __DIR__ . '/AbstractFileRepository.php';
+
 /**
  * MountainBikeRepository
  *
- * Loads mountain bike data from JSON, caches it with serialize().
+ * Persists mountain bike data as JSON with a serialize() cache sidecar.
+ * Extends AbstractFileRepository — inherits caching, locking, and secure
+ * deserialization. Only mountain-bike-specific JSON handling lives here.
  *
- * serialize()/unserialize(): same approach as BeachCruiserRepository.
- * You might wonder why we serialize a PHP array back to disk when we could
- * just re-parse the JSON. The answer is "performance" and "legacy reasons"
- * and the faint smell of decisions made at 11pm. The cache is fast. The JSON parse is slower.
- * This is the optimization. It works. It is also the kind of thing you replace
- * with Redis or Memcached and feel very modern for exactly one sprint.
+ * SOLID:
+ *  - S: Responsible only for mountain-bike JSON parsing and serialisation.
+ *  - O: Cache strategy changes in the base; JSON format changes here only.
+ *  - L: Fully substitutable for AbstractFileRepository in tests.
  */
-class MountainBikeRepository {
-
-    private $dataPath;
-    private $cachePath;
+class MountainBikeRepository extends AbstractFileRepository {
 
     public function __construct($dataFolder) {
         $this->dataPath  = $dataFolder . DIRECTORY_SEPARATOR . 'mountain_bikes.json';
@@ -22,74 +21,35 @@ class MountainBikeRepository {
     }
 
     /**
-     * Get all mountain bikes.
-     *
-     * Cache freshness check via filemtime() comparison.
-     * If the cache is fresh: unserialize and return. Zero JSON parsing.
-     * If not: load from JSON, serialize to cache, return.
-     * PascalCase keys because the JSON uses PascalCase and we respect the source.
-     * Even when it's inconsistent with every other file in this project.
-     * Especially then.
-     *
-     * @return array
-     */
-    public function getAll() {
-        if ($this->isCacheFresh()) {
-            $cached = unserialize(file_get_contents($this->cachePath));
-            if ($cached !== false) {
-                return $cached;
-            }
-            // Cache is fresh but unserialize() returned false.
-            // Someone edited it by hand or PHP is having a moment. Either way: reload.
-        }
-
-        $bikes = $this->loadFromJson();
-        file_put_contents($this->cachePath, serialize($bikes));
-        return $bikes;
-    }
-
-    /**
      * Save bikes to JSON and refresh the cache.
-     * JSON_PRETTY_PRINT because we are courteous to future humans who open the file directly.
-     * The cache file has no such courtesy. It is for machines.
+     * JSON_PRETTY_PRINT keeps the file human-readable when inspected directly.
      *
      * @param array $bikes
      */
-    public function save($bikes) {
-        $json = json_encode($bikes, JSON_PRETTY_PRINT);
-        file_put_contents($this->dataPath, $json);
-        file_put_contents($this->cachePath, serialize($bikes));
+    public function save(array $bikes) {
+        $this->_writeFile(json_encode($bikes, JSON_PRETTY_PRINT));
+        $this->_writeCache($bikes);
     }
 
+    // ─── AbstractFileRepository contract ─────────────────────────────────────
+
     /**
-     * Returns true if the cache sidecar exists and is newer than the JSON data file.
-     * file_exists() called twice. In a world with better architecture, this would be atomic.
-     * In this world, there is a race condition nobody has ever triggered. Yet.
+     * Parse mountain_bikes.json into a plain PHP array.
+     * Each field is cast to its correct scalar type so callers never
+     * receive raw mixed values from json_decode.
+     *
+     * @return array
      */
-    private function isCacheFresh() {
-        if (!file_exists($this->cachePath)) {
-            return false;
-        }
+    protected function loadFromSource() {
         if (!file_exists($this->dataPath)) {
-            return false;
+            return [];
         }
-        return filemtime($this->cachePath) >= filemtime($this->dataPath);
-    }
 
-    /**
-     * Load bikes from JSON.
-     * json_decode() with true returns an associative array, not an object.
-     * The true parameter has been there since PHP 5.2 and has caused exactly
-     * one argument per team about whether it should be the default.
-     * It is not the default. You must remember to pass it.
-     * We remember. Today.
-     */
-    private function loadFromJson() {
         $contents = file_get_contents($this->dataPath);
         $decoded  = json_decode($contents, true);
 
-        if ($decoded === null) {
-            return []; // JSON failed to parse. No explanation offered. Very PHP.
+        if (!is_array($decoded)) {
+            return [];
         }
 
         $bikes = [];

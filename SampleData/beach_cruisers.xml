@@ -6,7 +6,7 @@
     <color>Coral</color>
     <frame_size>Medium</frame_size>
     <daily_rate>14.99</daily_rate>
-    <is_available>true</is_available>
+    <is_available>false</is_available>
   </Bike>
   <Bike>
     <bike_id>2</bike_id>
@@ -14,7 +14,7 @@
     <color>Teal</color>
     <frame_size>Large</frame_size>
     <daily_rate>16.99</daily_rate>
-    <is_available>true</is_available>
+    <is_available>false</is_available>
   </Bike>
   <Bike>
     <bike_id>3</bike_id>
@@ -30,7 +30,7 @@
     <color>Lime Green</color>
     <frame_size>Medium</frame_size>
     <daily_rate>15.99</daily_rate>
-    <is_available>true</is_available>
+    <is_available>false</is_available>
   </Bike>
   <Bike>
     <bike_id>5</bike_id>
@@ -38,7 +38,7 @@
     <color>Sky Blue</color>
     <frame_size>Large</frame_size>
     <daily_rate>17.99</daily_rate>
-    <is_available>true</is_available>
+    <is_available>false</is_available>
   </Bike>
   <Bike>
     <bike_id>6</bike_id>
