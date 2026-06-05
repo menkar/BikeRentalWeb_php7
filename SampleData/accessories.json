@@ -5,7 +5,7 @@
         "Category": "Hydration",
         "Description": "Keeps your water cold and your excuses for stopping minimal.",
         "UnitPrice": 2.99,
-        "StockCount": 9,
+        "StockCount": 8,
         "CompatibleWith": [
             "mountain",
             "beach"
@@ -40,7 +40,7 @@
         "Category": "Storage",
         "Description": "Straps to your frame. Carries snacks. Does not carry your feelings.",
         "UnitPrice": 5.99,
-        "StockCount": 4,
+        "StockCount": 0,
         "CompatibleWith": [
             "mountain"
         ]

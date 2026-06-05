@@ -19,7 +19,7 @@
         "SuspensionType": "Full",
         "FrameMaterial": "Carbon Fiber",
         "DailyRate": 34.99,
-        "IsAvailable": true,
+        "IsAvailable": false,
         "Terrain": "Enduro",
         "WeightKg": 11.2
     },
